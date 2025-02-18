@@ -29,6 +29,7 @@ python main.py training_data.json
 ```
 
 Additional training options:
+- `--model` - HuggingFace model to use (default: facebook/opt-1.3b)
 - `--epochs` - Number of training epochs (default: 10)
 - `--learning-rate` - Learning rate (default: 5e-5)
 - `--fresh-start` - Start with a fresh model instead of loading existing fine-tuned model
@@ -36,7 +37,7 @@ Additional training options:
 
 Example with custom parameters:
 ```bash
-python main.py training_data.json --epochs 15 --learning-rate 3e-5 --fresh-start
+python main.py training_data.json --model "facebook/opt-350m" --epochs 15 --learning-rate 3e-5 --fresh-start
 ```
 
 ### Inference

@@ -34,7 +34,7 @@ def main(args):
     print("Starting initialization...")
 
     # Initialize model and tokenizer
-    model_name = "facebook/opt-1.3b"  # Using a more powerful model
+    model_name = args.model if args.model else "facebook/opt-1.3b"
     fine_tuned_path = "./fine_tuned_model"
 
     print("\nChecking for existing fine-tuned model...")
@@ -167,6 +167,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train a language model on Q&A pairs')
     parser.add_argument('data_path', type=str, help='Path to the JSON file containing training data')
+    parser.add_argument('--model', type=str, help='HuggingFace model to use (default: facebook/opt-1.3b)')
     parser.add_argument('--epochs', type=int, default=10, help='Number of training epochs')
     parser.add_argument('--learning-rate', type=float, default=5e-5, help='Learning rate')
     parser.add_argument('--fresh-start', action='store_true', help='Start with a fresh model instead of loading existing fine-tuned model')
