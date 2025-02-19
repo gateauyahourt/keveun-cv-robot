@@ -11,7 +11,7 @@ device = torch.device("cpu")
 def generate_response(question, model, tokenizer, max_length=100):
     try:
         # Format the input
-        input_text = f"Question: {question}\nAnswer:"
+        input_text = f"Instruction: {question}\n<TAGS>professional\nResponse:"
         
         # Tokenize input
         inputs = tokenizer(input_text, return_tensors="pt", padding=True, truncation=True, max_length=max_length)

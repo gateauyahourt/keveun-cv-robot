@@ -3,7 +3,7 @@ import json
 import argparse
 from pathlib import Path
 
-# Set tokenizers parallelism to enable parallel processing
+# Enable parallel processing for tokenizers
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
 from datasets import Dataset
@@ -11,21 +11,21 @@ from transformers import TrainingArguments, Trainer
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
 
-def load_conversations(json_path):
-    """Load conversations from a JSON file."""
+def load_instructions(json_path):
+    """Load instruction dataset from a JSON file."""
     print(f"\nLoading training data from {json_path}...")
     try:
-        with open(json_path, 'r') as f:
+        with open(json_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
         
-        # Convert Q&A pairs to the format expected by the model
-        conversations = [
-            f"Question: {item['question']}\nAnswer: {item['answer']}"
-            for item in data['conversations']
+        # Convert instruction-response pairs to the format expected by the model.
+        # Here, we include the tags to condition the model's behavior.
+        instructions = [
+            f"Instruction: {item['instruction']}\n<TAGS>{', '.join(item.get('tags', []))}\nResponse: {item['response']}"
+            for item in data['instructions']
         ]
-        
-        print(f"Loaded {len(conversations)} conversations")
-        return conversations, [item['question'] for item in data['conversations']]
+        print(f"Loaded {len(instructions)} instruction pairs")
+        return instructions
     except Exception as e:
         print(f"Error loading training data: {str(e)}")
         raise
@@ -48,32 +48,41 @@ def main(args):
             print("Fresh start requested. Loading base model...")
         else:
             print("No existing model found. Loading base model...")
+
         print("\nInitializing tokenizer...")
         tokenizer = AutoTokenizer.from_pretrained(model_name)
+        # Add special tokens for tags if needed
+        special_tokens_dict = {"additional_special_tokens": ["<TAGS>"]}
+        num_added_toks = tokenizer.add_special_tokens(special_tokens_dict)
+        if num_added_toks > 0:
+            print(f"Added {num_added_toks} special tokens to the tokenizer: {special_tokens_dict['additional_special_tokens']}")
+
         print("\nInitializing model...")
         model = AutoModelForCausalLM.from_pretrained(model_name)
+        # Resize the model embeddings to accommodate the new tokens
+        model.resize_token_embeddings(len(tokenizer))
         print("Base model loaded successfully")
 
-    # Set device
+    # Set device (using CPU or available hardware)
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     print(f"\nUsing device: {device}")
     
-    # Enable gradient checkpointing to optimize memory usage
+    # Enable gradient checkpointing for memory optimization
     model.gradient_checkpointing_enable()
     model = model.to(device)
 
-    # Add special tokens
+    # Set padding token if not already set
     tokenizer.pad_token = tokenizer.eos_token
     model.config.pad_token_id = model.config.eos_token_id
 
-    # Load training data
-    conversations, test_questions = load_conversations(args.data_path)
+    # Load training data (instruction fine-tuning dataset)
+    instructions = load_instructions(args.data_path)
 
     # Prepare and tokenize the dataset
     def prepare_dataset(texts):
         print("Preparing dataset...")
         try:
-            encodings = tokenizer(texts, truncation=True, padding=True, max_length=256)
+            encodings = tokenizer(texts, truncation=True, padding=True, max_length=512)
             dataset = Dataset.from_dict({
                 "input_ids": encodings["input_ids"],
                 "attention_mask": encodings["attention_mask"],
@@ -86,7 +95,7 @@ def main(args):
             raise
 
     try:
-        dataset = prepare_dataset(conversations)
+        dataset = prepare_dataset(instructions)
     except Exception as e:
         print(f"Failed to prepare dataset: {str(e)}")
         raise
@@ -98,7 +107,7 @@ def main(args):
         num_train_epochs=args.epochs,
         per_device_train_batch_size=1,
         learning_rate=args.learning_rate,
-        gradient_accumulation_steps=4,  # Accumulate gradients to simulate larger batch size
+        gradient_accumulation_steps=4,  # Accumulate gradients to simulate a larger batch size
         save_strategy="no",
         report_to="none"
     )
@@ -112,15 +121,15 @@ def main(args):
             train_dataset=dataset,
             tokenizer=tokenizer
         )
-        print("\nTrainer prepared successfully")
+        print("Trainer prepared successfully")
     except Exception as e:
-        print(f"\nError preparing trainer: {str(e)}")
+        print(f"Error preparing trainer: {str(e)}")
         raise
 
-    # Start fine-tuning
+    # Start fine-tuning (instruction fine-tuning)
     print("\nStarting training...")
     trainer.train()
-    print("\nTraining completed")
+    print("Training completed")
 
     # Save the fine-tuned model and tokenizer
     print("\nSaving model and tokenizer...")
@@ -132,15 +141,15 @@ def main(args):
         print("\nTesting the fine-tuned model:")
         print("-" * 50)
 
-        def generate_response(question, max_length=200):
-            # Format the input
-            input_text = f"Question: {question}\nAnswer:"
+        def generate_response(instruction, max_length=256):
+            # Format the input using the same structure as during training
+            input_text = f"Instruction: {instruction}\n<TAGS>professional\nResponse:"
             
             # Tokenize input
             inputs = tokenizer(input_text, return_tensors="pt", padding=True, truncation=True, max_length=max_length)
             inputs = {k: v.to(device) for k, v in inputs.items()}
             
-            # Generate
+            # Generate response
             outputs = model.generate(
                 inputs["input_ids"],
                 attention_mask=inputs["attention_mask"],
@@ -158,19 +167,20 @@ def main(args):
             response = tokenizer.decode(outputs[0], skip_special_tokens=True)
             return response
 
-        for question in test_questions:
-            response = generate_response(question)
-            print(f"\nQuestion: {question}")
-            print(f"Generated Response: {response}")
-            print("-" * 50)
+        # Exemple de test avec une instruction relative à votre profil
+        test_instruction = "What is your experience at Qohash?"
+        response = generate_response(test_instruction)
+        print(f"Instruction: {test_instruction}")
+        print(f"Generated Response: {response}")
+        print("-" * 50)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Train a language model on Q&A pairs')
-    parser.add_argument('data_path', type=str, help='Path to the JSON file containing training data')
+    parser = argparse.ArgumentParser(description='Instruction Fine-tuning on your CV data')
+    parser.add_argument('data_path', type=str, help='Path to the JSON file containing the instruction dataset')
     parser.add_argument('--model', type=str, help='HuggingFace model to use (default: facebook/opt-1.3b)')
     parser.add_argument('--epochs', type=int, default=10, help='Number of training epochs')
     parser.add_argument('--learning-rate', type=float, default=5e-5, help='Learning rate')
-    parser.add_argument('--fresh-start', action='store_true', help='Start with a fresh model instead of loading existing fine-tuned model')
+    parser.add_argument('--fresh-start', action='store_true', help='Start with a fresh model instead of loading an existing fine-tuned model')
     parser.add_argument('--skip-testing', action='store_true', help='Skip the testing phase after training')
     
     args = parser.parse_args()

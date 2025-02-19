@@ -57,7 +57,7 @@ To exit interactive mode, type 'exit'.
 
 ## Technical Details
 
-- Base Model: facebook/opt-1.3b
+- Base Model: facebook/opt-350m
 - Training Features:
   - Gradient checkpointing for memory optimization
   - Device support for MPS (Apple Silicon) and CPU
@@ -72,13 +72,9 @@ To exit interactive mode, type 'exit'.
 
 ## Dataset
 
-The training data (`training_data.json`) contains Q&A pairs about a rich fictional universe, including:
-- Characters (e.g., Zephyr the Magnificent, Dr. Luna Starweaver)
-- Places (e.g., Neothopolis, Echo Forest)
-- Concepts (e.g., Stellar Harmony Theory, Chronosphere Paradox)
-- Technologies (e.g., Luminary Protocol, reality-shift technology)
+The training data (`training_data_cv.json`) contains Q&A pairs about myself (my CV).
 
-The dataset is structured as a JSON file with a "conversations" array containing question-answer pairs.
+The dataset is structured as a JSON file with a "instructions" array containing instruction-response pairs.
 
 ## Notes
 
