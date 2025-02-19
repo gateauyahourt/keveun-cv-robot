@@ -105,11 +105,13 @@ def main(args):
     training_args = TrainingArguments(
         output_dir="./results",
         num_train_epochs=args.epochs,
-        per_device_train_batch_size=1,
+        per_device_train_batch_size=args.batch_size,
         learning_rate=args.learning_rate,
-        gradient_accumulation_steps=4,  # Accumulate gradients to simulate a larger batch size
+        gradient_accumulation_steps=10,  # Accumulate gradients to simulate a larger batch size
         save_strategy="no",
-        report_to="none"
+        report_to="tensorboard",
+        logging_steps=4,              # Logs every 10 steps (adjust as needed)
+        logging_dir="./results/logs"   # Directory where logs will be saved
     )
 
     # Prepare the trainer
@@ -180,6 +182,7 @@ if __name__ == "__main__":
     parser.add_argument('--model', type=str, help='HuggingFace model to use (default: facebook/opt-1.3b)')
     parser.add_argument('--epochs', type=int, default=10, help='Number of training epochs')
     parser.add_argument('--learning-rate', type=float, default=5e-5, help='Learning rate')
+    parser.add_argument('--batch-size', type=int, default=1, help='Batch size')
     parser.add_argument('--fresh-start', action='store_true', help='Start with a fresh model instead of loading an existing fine-tuned model')
     parser.add_argument('--skip-testing', action='store_true', help='Skip the testing phase after training')
     

@@ -65,7 +65,7 @@ To exit interactive mode, type 'exit'.
   - Gradient accumulation (4 steps)
   
 - Inference Features:
-  - Temperature-controlled text generation (0.7)
+  - Temperature-controlled text generation (0.8)
   - No-repeat ngram size: 2
   - CPU optimization for inference
   - Interactive testing mode
@@ -82,3 +82,4 @@ The dataset is structured as a JSON file with a "instructions" array containing 
 - Training utilizes MPS (Metal Performance Shaders) if available on Apple Silicon, falling back to CPU otherwise
 - The fine-tuned model and tokenizer are automatically saved to the `fine_tuned_model/` directory
 - Training progress and results are saved in the `results/` directory
+- If you want to see the training logs, run `tensorboard --logdir results/logs` after/during training

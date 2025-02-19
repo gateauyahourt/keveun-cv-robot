@@ -4,11 +4,12 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-# Force CPU usage
-print("Using CPU for inference...")
+# Set device to MPS if available
+# device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+# Force CPU for testing because MPS doesn't work here.
 device = torch.device("cpu")
 
-def generate_response(question, model, tokenizer, max_length=100):
+def generate_response(question, model, tokenizer, max_length=200):
     try:
         # Format the input
         input_text = f"Instruction: {question}\n<TAGS>professional\nResponse:"
@@ -24,7 +25,7 @@ def generate_response(question, model, tokenizer, max_length=100):
             max_length=max_length,
             num_return_sequences=1,
             no_repeat_ngram_size=2,
-            temperature=0.7,
+            temperature=0.8,
             do_sample=True,
             pad_token_id=tokenizer.eos_token_id
         )
