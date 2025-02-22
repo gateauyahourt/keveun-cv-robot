@@ -1,12 +1,13 @@
-# Kevin's Model - Fictional Universe Q&A
+# Kevin's Model
 
-A fine-tuned language model that specializes in answering questions about a custom fictional universe. The model is based on Facebook's OPT-1.3B and is trained on a set of predefined question-answer pairs about various fictional characters, places, and concepts.
+A fine-tuned language model that specializes in answering questions about myself. The model is based on Facebook's OPT-350m and is trained on a set of predefined question-answer pairs about my CV.
+This is an instruction fine-tuned model, which means it is trained to generate responses based on a given instruction.
 
 ## Project Structure
 
-- `main.py` - Training script that fine-tunes the base model (OPT-1.3B) on the custom dataset
+- `main.py` - Training script that fine-tunes the base model (OPT-350m) on the custom dataset
 - `test_model.py` - Inference script for testing the fine-tuned model, includes both automated testing and interactive mode
-- `training_data.json` - Dataset containing Q&A pairs about the fictional universe
+- `training_data.json` - Dataset containing Q&A pairs
 - `requirements.txt` - Python dependencies
 - `fine_tuned_model/` - Directory containing the saved fine-tuned model (generated after training)
 - `results/` - Directory containing training results and logs

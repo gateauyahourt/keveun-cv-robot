@@ -34,7 +34,7 @@ def main(args):
     print("Starting initialization...")
 
     # Initialize model and tokenizer
-    model_name = args.model if args.model else "facebook/opt-1.3b"
+    model_name = args.model if args.model else "facebook/opt-350m"
     fine_tuned_path = "./fine_tuned_model"
 
     print("\nChecking for existing fine-tuned model...")
