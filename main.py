@@ -10,6 +10,7 @@ from datasets import Dataset
 from transformers import TrainingArguments, Trainer
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
+from transformers import BitsAndBytesConfig
 
 def load_instructions(json_path):
     """Load instruction dataset from a JSON file."""
@@ -34,7 +35,7 @@ def main(args):
     print("Starting initialization...")
 
     # Initialize model and tokenizer
-    model_name = args.model if args.model else "facebook/opt-350m"
+    model_name = args.model if args.model else "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
     fine_tuned_path = "./fine_tuned_model"
 
     print("\nChecking for existing fine-tuned model...")
@@ -50,7 +51,7 @@ def main(args):
             print("No existing model found. Loading base model...")
 
         print("\nInitializing tokenizer...")
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, use_fast=False)
         # Add special tokens for tags if needed
         special_tokens_dict = {"additional_special_tokens": ["<TAGS>"]}
         num_added_toks = tokenizer.add_special_tokens(special_tokens_dict)
@@ -58,7 +59,11 @@ def main(args):
             print(f"Added {num_added_toks} special tokens to the tokenizer: {special_tokens_dict['additional_special_tokens']}")
 
         print("\nInitializing model...")
-        model = AutoModelForCausalLM.from_pretrained(model_name)
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            trust_remote_code=True,
+            torch_dtype=torch.float32  # Use float32 for CPU
+        )
         # Resize the model embeddings to accommodate the new tokens
         model.resize_token_embeddings(len(tokenizer))
         print("Base model loaded successfully")
@@ -177,16 +182,16 @@ def main(args):
         print("-" * 50)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Instruction Fine-tuning on your CV data')
-    parser.add_argument('data_path', type=str, help='Path to the JSON file containing the instruction dataset')
-    parser.add_argument('--model', type=str, help='HuggingFace model to use (default: facebook/opt-1.3b)')
+    parser = argparse.ArgumentParser(description='Instruction Fine-tuning on your CV data', allow_abbrev=False)
+    parser.add_argument('--model', type=str, help='HuggingFace model to use (default: TinyLlama/TinyLlama-1.1B-Chat-v1.0)')
     parser.add_argument('--epochs', type=int, default=10, help='Number of training epochs')
     parser.add_argument('--learning-rate', type=float, default=5e-5, help='Learning rate')
     parser.add_argument('--batch-size', type=int, default=1, help='Batch size')
     parser.add_argument('--fresh-start', action='store_true', help='Start with a fresh model instead of loading an existing fine-tuned model')
     parser.add_argument('--skip-testing', action='store_true', help='Skip the testing phase after training')
+    parser.add_argument('data_path', type=str, nargs='?', default='training_data_cv.json', help='Path to the JSON file containing the instruction dataset')
     
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
     
     # Validate JSON path
     if not Path(args.data_path).exists():

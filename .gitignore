@@ -1,3 +1,6 @@
 fine_tuned_model/
+hf_model/
+llama.cpp/
 results/
 venv/
+model.gguf
